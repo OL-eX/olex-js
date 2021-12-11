@@ -60,11 +60,7 @@ export class GrammaticalAnalyzer {
 
     private static addBracketClose = () => "], "
 
-    private static addBraceOpen = () => "{"
-
     private static addBraceClose = () => "}, "
-
-    private static addComma = () => ", "
 
     private static addNodeOpen = () => `{"Name":`
 
@@ -135,7 +131,7 @@ export class GrammaticalAnalyzer {
         return _back
     }
 
-    handleLiterals = (c: LexicalAnalyzerResultType) => {
+    private handleLiterals = (c: LexicalAnalyzerResultType) => {
         switch (c[0]) {
             case "CommandLiteral": {
                 this._res += GrammaticalAnalyzer.addNodeOpen()
