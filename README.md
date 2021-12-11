@@ -4,10 +4,10 @@ The document is prowered by Vditor!
 
 ## Design
 
-Olex is a pluggable TeX transformer, the architecture as followed:
+OLeX is a pluggable TeX transformer, the architecture as followed:
 
 ```mindmap
-- Olex
+- OLeX
   - Before Analysis
     - Preprocessor
       - CRLF Handler
