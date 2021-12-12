@@ -64,11 +64,16 @@ export class GrammaticalAnalyzer {
 
     private static addNodeOpen = () => `{"Name":`
 
-    private static addNodeOptionalArgumentsOpen = () =>
-        `, "OptionalArguments": [`
+    // private static addNodeOptionalArgumentsOpen = () =>
+    //     `, "OptionalArguments": [`
 
-    private static addNodeCompulsoryArgumentsOpen = () =>
-        `, "CompulsoryArguments": [`
+    // private static addNodeCompulsoryArgumentsOpen = () =>
+    //     `, "CompulsoryArguments": [`
+
+    private static addNodeArgumentsOpen = () => `, "Arguments": [`
+
+    private static addNodeArguments = (type: "Optional" | "Compulsory") =>
+        `{"Type": "${type}", "Nodes": [`
 
     private static addNodeType = (type: NodeType) => `, "Type": "${type}"`
 
@@ -77,59 +82,67 @@ export class GrammaticalAnalyzer {
 
     private static deepClone = (raw: any) => JSON.parse(JSON.stringify(raw))
 
-    private polish = (): Array<INode> => {
-        const raw_tree: Array<INode> = JSON.parse(this._res) as Array<INode>
-        const envs_stack: Array<INode> = []
-        let depth: number = -1
-        const _back = []
-        for (let i = 0; i < raw_tree.length; i++) {
-            const item = raw_tree[i]
-            if (item.Type === "Environment") {
-                if (item.Name === "begin") {
-                    envs_stack.push(item)
-                    depth++
-                    continue
-                }
-
-                if (item.Name === "end") {
-                    if (depth > 0) {
-                        depth--
-                        const self = envs_stack.pop()
-                        if (!!envs_stack[depth].Content) {
-                            envs_stack[depth].Content.push(
-                                GrammaticalAnalyzer.deepClone(self)
-                            )
-                        } else {
-                            envs_stack[depth].Content = [
-                                GrammaticalAnalyzer.deepClone(self),
-                            ]
-                        }
-                    } else {
-                        _back.push(
-                            GrammaticalAnalyzer.deepClone(envs_stack.pop())
-                        )
-                        depth--
-                    }
-                    continue
-                }
-            }
-
-            if (depth !== -1) {
-                if (!!envs_stack[depth].Content) {
-                    envs_stack[depth].Content.push(
-                        GrammaticalAnalyzer.deepClone(item)
-                    )
-                } else {
-                    envs_stack[depth].Content = [
-                        GrammaticalAnalyzer.deepClone(item),
-                    ]
-                }
-            } else {
-                _back.push(item)
-            }
+    private removeWrongComma = () => {
+        if (this._res.charAt(this._res.length - 2) === ",") {
+            this._res = this._res.slice(0, this._res.length - 2)
         }
-        return _back
     }
+
+    // private polish = (): Array<INode> => {
+    //     const raw_tree: Array<BeforePolishType> = JSON.parse(
+    //         this._res
+    //     ) as Array<BeforePolishType>
+    //     const envs_stack: Array<INode> = []
+    //     let depth: number = -1
+    //     const _back = []
+    //     for (let i = 0; i < raw_tree.length; i++) {
+    //         const item = raw_tree[i]
+    //         if (item.Type === "Environment") {
+    //             if (item.Name === "begin") {
+    //                 envs_stack.push(item)
+    //                 depth++
+    //                 continue
+    //             }
+
+    //             if (item.Name === "end") {
+    //                 if (depth > 0) {
+    //                     depth--
+    //                     const self = envs_stack.pop()
+    //                     if (!!envs_stack[depth].Content) {
+    //                         envs_stack[depth].Content.push(
+    //                             GrammaticalAnalyzer.deepClone(self)
+    //                         )
+    //                     } else {
+    //                         envs_stack[depth].Content = [
+    //                             GrammaticalAnalyzer.deepClone(self),
+    //                         ]
+    //                     }
+    //                 } else {
+    //                     _back.push(
+    //                         GrammaticalAnalyzer.deepClone(envs_stack.pop())
+    //                     )
+    //                     depth--
+    //                 }
+    //                 continue
+    //             }
+    //         }
+
+    //         if (depth !== -1) {
+    //             if (!!envs_stack[depth].Content) {
+    //                 envs_stack[depth].Content.push(
+    //                     GrammaticalAnalyzer.deepClone(item)
+    //                 )
+    //             } else {
+    //                 envs_stack[depth].Content = [
+    //                     GrammaticalAnalyzer.deepClone(item),
+    //                 ]
+    //             }
+    //         } else {
+    //             _back.push(item)
+    //         }
+    //     }
+    //     return _back
+    // }
 
     private handleLiterals = (c: LexicalAnalyzerResultType) => {
         switch (c[0]) {
@@ -141,27 +154,33 @@ export class GrammaticalAnalyzer {
             }
 
             case "OpenBracketLiteral": {
-                this._res += GrammaticalAnalyzer.addNodeOptionalArgumentsOpen()
+                this._res += GrammaticalAnalyzer.addNodeArguments("Optional")
                 this._bracketCloseCount++
                 break
             }
 
             case "OpenBraceLiteral": {
-                this._res +=
-                    GrammaticalAnalyzer.addNodeCompulsoryArgumentsOpen()
+                this._res += GrammaticalAnalyzer.addNodeArguments("Compulsory")
                 this._braceCloseCount++
                 break
             }
 
             case "CloseBracketLiteral": {
-                if (this._res.charAt(this._res.length - 2) === ",") {
-                    this._res = this._res.slice(0, this._res.length - 2)
-                }
-
+                this.removeWrongComma()
                 if (!!this._bracketCloseCount) {
                     this._res +=
                         GrammaticalAnalyzer.addBracketClose().slice(0, 1) +
-                        GrammaticalAnalyzer.addBracketClose()
+                        GrammaticalAnalyzer.addBraceClose()
+                }
+
+                const AllowArgumentsNext: Array<LiteralType> = [
+                    "OpenBraceLiteral",
+                    "OpenBracketLiteral",
+                ]
+
+                if (!AllowArgumentsNext.includes(this.next()[0])) {
+                    this.removeWrongComma()
+                    this._res += "]}, "
                 }
 
                 this._bracketCloseCount--
@@ -169,13 +188,21 @@ export class GrammaticalAnalyzer {
             }
 
             case "CloseBraceLiteral": {
-                if (this._res.charAt(this._res.length - 2) === ",") {
-                    this._res = this._res.slice(0, this._res.length - 2)
-                }
+                this.removeWrongComma()
                 if (!!this._braceCloseCount) {
                     this._res +=
                         GrammaticalAnalyzer.addBracketClose().slice(0, 1) +
                         GrammaticalAnalyzer.addBraceClose()
+                }
+
+                const AllowArgumentsNext: Array<LiteralType> = [
+                    "OpenBraceLiteral",
+                    "OpenBracketLiteral",
+                ]
+
+                if (!AllowArgumentsNext.includes(this.next()[0])) {
+                    this.removeWrongComma()
+                    this._res += "]}, "
                 }
                 this._braceCloseCount--
                 break
@@ -221,14 +248,22 @@ export class GrammaticalAnalyzer {
                         }
 
                         this._res +=
-                            GrammaticalAnalyzer.addNodeType("Environment")
+                            GrammaticalAnalyzer.addNodeType("Environment") +
+                            GrammaticalAnalyzer.addNodeArgumentsOpen()
                         break
                     }
 
-                    this._res += GrammaticalAnalyzer.addNodeType("Command")
+                    this._res +=
+                        GrammaticalAnalyzer.addNodeType("Command") +
+                        GrammaticalAnalyzer.addNodeArgumentsOpen()
 
-                    if (this.next()[0] !== "OpenBraceLiteral") {
-                        this._res += "}, "
+                    // Handle next literal !== `{`
+                    const AllowLiterNext: Array<LiteralType> = [
+                        "OpenBraceLiteral",
+                        "OpenBracketLiteral",
+                    ]
+                    if (!AllowLiterNext.includes(this.next()[0])) {
+                        this._res += "]}, "
                     }
                     break
                 }
@@ -281,7 +316,8 @@ export class GrammaticalAnalyzer {
 
         this._res = this._res.slice(0, this._res.length - 2)
         this._res += "]"
-        const _back = this.polish()
-        return _back
+        // const _back = this.polish()
+        // return _back
+        return this._res
     }
 }

@@ -11,9 +11,9 @@ test("should ", () => {
         .readFileSync(path.join(__dirname, "../../test.tex"))
         .toString()
     const tokenQueue = new Tokenizer(content).analyze()
-    // console.log(tokenQueue)
+    console.log(tokenQueue)
     const literals = new LexicalAnalyzer(tokenQueue).analyze()
-    // console.log(literals)
+    console.log(literals)
     const ast = new GrammaticalAnalyzer(literals).analyze()
 
     // fs.writeFileSync(target, JSON.stringify(ast))
