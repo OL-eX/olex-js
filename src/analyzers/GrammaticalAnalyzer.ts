@@ -206,22 +206,36 @@ export class GrammaticalAnalyzer {
             }
 
             case "DollarLiteral": {
-                // TODO
-                // this._factors.includes("math")
-                //     ? this.removeFactorsValue("math")
-                //     : this._factors.push("math")
-                // const _v = this.EnvironmentTextNodeGenerator(
-                //     ["CommentLiteral", "SpecialLiteral", "TextLiteral"],
-                //     []
-                // )
-                // if (!!_v) {
-                //     this._res += GrammaticalAnalyzer.addSimpleNode(
-                //         "",
-                //         "Math",
-                //         _v
-                //     )
-                // }
+                // TODO `$$`
+                // `$`
+                if (!this._factors.includes("comment")) {
+                    this._factors.includes("math")
+                        ? this.removeFactorsValue("math")
+                        : this._factors.push("math")
+                    const AllowMathNext: Array<LiteralType> = [
+                        "OpenBraceLiteral",
+                        "CloseBraceLiteral",
+                        "OpenBracketLiteral",
+                        "CloseBracketLiteral",
+                        "CommandLiteral",
+                        "CommentLiteral",
+                        "SpecialLiteral",
+                        "TextLiteral",
+                    ]
+                    const _v = this.EnvironmentTextNodeGenerator(
+                        AllowMathNext,
+                        ["$"]
+                    )
 
+                    if (!!_v) {
+                        this._res += GrammaticalAnalyzer.addSimpleNode(
+                            _v,
+                            "Math"
+                        )
+                    }
+                }
+
+                this._pos++
                 break
             }
 
@@ -314,6 +328,8 @@ export class GrammaticalAnalyzer {
 
         this._res = this._res.slice(0, this._res.length - 2)
         this._res += "]"
+        this._res = this._res.replace(/\\/g, "\\\\")
+        console.log(this._res)
         const _back = this.polish()
         return _back
     }

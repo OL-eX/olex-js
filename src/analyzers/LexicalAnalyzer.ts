@@ -113,7 +113,14 @@ export class LexicalAnalyzer {
                         }
 
                         // Handle `$` sign
+                        // TODO 跳过默认的文本字面量生成, 减轻语法分析器负担
                         case "$": {
+                            if (!!this.next() && this.next()[1] === "$") {
+                                _back.push(["DollarLiteral", "$$"])
+                                this._pos += 2
+                                break
+                            }
+
                             _back.push(["DollarLiteral", "$"])
                             this._pos++
                             break
