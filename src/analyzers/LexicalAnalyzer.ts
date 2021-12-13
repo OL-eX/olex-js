@@ -21,18 +21,21 @@ export class LexicalAnalyzer {
 
     // Generate TextLiteral
     private TextLiteralGenerator = (
-        AllowNextTokenList: Array<TokenType>
+        AllowNextTokenList: Array<TokenType>,
+        except?: Array<string>
     ): string => {
         let _v = ""
+        except = except || []
         while (
             !!this.next() &&
             (this.next()[1] === "*" ||
-                AllowNextTokenList.includes(this.next()[0]))
+                (AllowNextTokenList.includes(this.next()[0]) &&
+                    !except.includes(this.next()[1])))
         ) {
             _v += this.next()[1]
             this._pos++
         }
-        return _v
+        return _v.trimEnd()
     }
 
     analyze = (): LexicalAnalyzerResultsQueueType => {
@@ -51,6 +54,7 @@ export class LexicalAnalyzer {
                             "NumberToken",
                         ])
                         _back.push(["TextLiteral", _v])
+                        this._pos++
                     }
                     break
                 }
@@ -116,6 +120,25 @@ export class LexicalAnalyzer {
                         }
 
                         default: {
+                            if (
+                                !!this.next() &&
+                                this.next()[0] !== "NewlineToken"
+                            ) {
+                                const AllowTextNext: Array<TokenType> = [
+                                    "AlphabetToken",
+                                    "NumberToken",
+                                    "SpaceToken",
+                                    "UnicodeToken",
+                                    "SpecialToken",
+                                ]
+                                const _v = this.TextLiteralGenerator(
+                                    AllowTextNext,
+                                    ["[", "]", "{", "}", "$"]
+                                )
+                                _back.push(["TextLiteral", c[1] + _v])
+                                this._pos++
+                                break
+                            }
                             _back.push(["SpecialLiteral", c[1]])
                             this._pos++
                             break
@@ -158,7 +181,7 @@ export class LexicalAnalyzer {
                 case "NumberToken":
                 case "UnicodeToken":
                 case "SpaceToken": {
-                    const allowTextNext: Array<TokenType> = [
+                    const AllowTextNext: Array<TokenType> = [
                         "AlphabetToken",
                         "NumberToken",
                         "SpaceToken",
@@ -166,10 +189,12 @@ export class LexicalAnalyzer {
                     ]
                     if (
                         !!this.next() &&
-                        allowTextNext.includes(this.next()[0])
+                        AllowTextNext.includes(this.next()[0])
                     ) {
-                        const _v = this.TextLiteralGenerator(allowTextNext)
-                        _back.push(["TextLiteral", c[1] + _v])
+                        const _v = this.TextLiteralGenerator(AllowTextNext)
+                        if (!!(c[1] + _v).trim()) {
+                            _back.push(["TextLiteral", c[1] + _v])
+                        }
                     }
                     this._pos++
                     break

@@ -10,6 +10,6 @@ export interface IArgument {
 export interface INode {
     Name: string
     Type: NodeType
-    Content?: Array<INode | string> | null
+    Content?: Array<INode> | null
     Arguments?: Array<IArgument> | null
 }
