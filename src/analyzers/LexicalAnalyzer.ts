@@ -45,17 +45,58 @@ export class LexicalAnalyzer {
             const c = this._queue[this._pos]
             switch (c[0]) {
                 // Handle `\`
+                // TODO escape token
                 case "BackslashToken": {
                     _back.push(["CommandLiteral", "\\"])
-                    if (!!this.next() && this.next()[0] === "AlphabetToken") {
+                    if (this.next()?.[0] === "AlphabetToken") {
                         const _v = this.TextLiteralGenerator([
                             "AlphabetToken",
                             "UnicodeToken",
                             "NumberToken",
                         ])
-                        _back.push(["TextLiteral", _v])
+
+                        // Escape Token
+                        switch (_v) {
+                            case "newline": {
+                                _back.push(["NewlineLiteral", _v])
+                                break
+                            }
+
+                            case "textbackslash": {
+                                _back.push(["TextLiteral", "\\"])
+                                break
+                            }
+
+                            default: {
+                                _back.push(["TextLiteral", _v])
+                                break
+                            }
+                        }
+
                         this._pos++
+                        break
                     }
+
+                    if (this.next()?.[0] === "BackslashToken") {
+                        _back.push(["NewlineLiteral", "\\\\"])
+                        this._pos += 2
+                        break
+                    }
+
+                    // Escape Special Token
+                    if (this.next()?.[0] === "SpecialToken") {
+                        const AllowEscapeToken: Array<string> = ["$"]
+                        if (AllowEscapeToken.includes(this.next()?.[1])) {
+                            _back.push(["TextLiteral", this.next()?.[1]])
+                            this._pos++
+                            break
+                        }
+
+                        this._pos++
+                        break
+                    }
+
+                    this._pos++
                     break
                 }
 
@@ -64,10 +105,7 @@ export class LexicalAnalyzer {
                     switch (c[1]) {
                         case "[": {
                             _back.push(["OpenBracketLiteral", "["])
-                            if (
-                                !!this.next() &&
-                                this.next()[0] === "AlphabetToken"
-                            ) {
+                            if (this.next()?.[0] === "AlphabetToken") {
                                 const _v = this.TextLiteralGenerator([
                                     "AlphabetToken",
                                     "UnicodeToken",
@@ -87,18 +125,20 @@ export class LexicalAnalyzer {
                             break
                         }
 
+                        // TODO refactor
                         case "{": {
                             _back.push(["OpenBraceLiteral", "{"])
-                            if (
-                                !!this.next() &&
-                                this.next()[0] === "AlphabetToken"
-                            ) {
-                                const _v = this.TextLiteralGenerator([
-                                    "AlphabetToken",
-                                    "UnicodeToken",
-                                    "NumberToken",
-                                    "SpaceToken",
-                                ])
+                            if (this.next()?.[0] === "AlphabetToken") {
+                                const _v = this.TextLiteralGenerator(
+                                    [
+                                        "AlphabetToken",
+                                        "UnicodeToken",
+                                        "NumberToken",
+                                        "SpaceToken",
+                                        "SpecialToken",
+                                    ],
+                                    ["{", "}"]
+                                )
                                 _back.push(["TextLiteral", _v])
                             } else {
                                 this._pos++
@@ -115,7 +155,10 @@ export class LexicalAnalyzer {
                         // Handle `$` sign
                         // TODO 跳过默认的文本字面量生成, 减轻语法分析器负担
                         case "$": {
-                            if (!!this.next() && this.next()[1] === "$") {
+                            if (
+                                this.next()?.[0] === "SpecialToken" &&
+                                this.next()?.[1] === "$"
+                            ) {
                                 _back.push(["DollarLiteral", "$$"])
                                 this._pos += 2
                                 break
@@ -127,10 +170,7 @@ export class LexicalAnalyzer {
                         }
 
                         default: {
-                            if (
-                                !!this.next() &&
-                                this.next()[0] !== "NewlineToken"
-                            ) {
+                            if (this.next()?.[0] !== "NewlineToken") {
                                 const AllowTextNext: Array<TokenType> = [
                                     "AlphabetToken",
                                     "NumberToken",
@@ -146,6 +186,7 @@ export class LexicalAnalyzer {
                                 this._pos++
                                 break
                             }
+
                             _back.push(["SpecialLiteral", c[1]])
                             this._pos++
                             break
@@ -194,10 +235,7 @@ export class LexicalAnalyzer {
                         "SpaceToken",
                         "UnicodeToken",
                     ]
-                    if (
-                        !!this.next() &&
-                        AllowTextNext.includes(this.next()[0])
-                    ) {
+                    if (AllowTextNext.includes(this.next()?.[0])) {
                         const _v = this.TextLiteralGenerator(AllowTextNext)
                         if (!!(c[1] + _v).trim()) {
                             _back.push(["TextLiteral", c[1] + _v])

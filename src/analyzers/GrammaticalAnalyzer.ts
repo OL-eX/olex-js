@@ -170,7 +170,7 @@ export class GrammaticalAnalyzer {
                     "OpenBracketLiteral",
                 ]
 
-                if (!AllowArgumentsNext.includes(this.next()[0])) {
+                if (!AllowArgumentsNext.includes(this.next()?.[0])) {
                     this.removeWrongComma()
                     this._res += "]}, "
                 }
@@ -192,7 +192,7 @@ export class GrammaticalAnalyzer {
                     "OpenBracketLiteral",
                 ]
 
-                if (!AllowArgumentsNext.includes(this.next()[0])) {
+                if (!AllowArgumentsNext.includes(this.next()?.[0])) {
                     this.removeWrongComma()
                     this._res += "]}, "
                 }
@@ -308,12 +308,18 @@ export class GrammaticalAnalyzer {
                     ["\\", "{", "}", "[", "}", "$"]
                 )
 
-                console.log(_text)
-
                 this._res += GrammaticalAnalyzer.addSimpleNode(
                     c[1] + _text,
                     "Text"
                 )
+                this._pos++
+                break
+            }
+
+            case "NewlineLiteral": {
+                this._res += GrammaticalAnalyzer.addSimpleNode(c[1], "Newline")
+                this._pos++
+                break
             }
         }
     }
@@ -330,7 +336,8 @@ export class GrammaticalAnalyzer {
         this._res += "]"
         this._res = this._res.replace(/\\/g, "\\\\")
         console.log(this._res)
-        const _back = this.polish()
-        return _back
+        return this._res
+        // const _back = this.polish()
+        // return _back
     }
 }

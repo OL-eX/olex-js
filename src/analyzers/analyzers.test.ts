@@ -13,9 +13,9 @@ test("should ", () => {
     const tokenQueue = new Tokenizer(content).analyze()
     console.log(tokenQueue)
     const literals = new LexicalAnalyzer(tokenQueue).analyze()
-    console.log(literals)
-    const ast = new GrammaticalAnalyzer(literals).analyze()
+    console.log(JSON.stringify(literals))
+    // const ast = new GrammaticalAnalyzer(literals).analyze()
 
     // fs.writeFileSync(target, JSON.stringify(ast))
-    console.log("语法分析AST:\t", JSON.stringify(ast))
+    // console.log("语法分析AST:\t", JSON.stringify(ast))
 })
