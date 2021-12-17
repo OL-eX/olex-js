@@ -19,21 +19,47 @@ export class LexicalAnalyzer {
         return this._queue[this._pos + 1]
     }
 
-    // Generate TextLiteral
     private TextLiteralGenerator = (
         AllowNextTokenList: Array<TokenType>,
-        except?: Array<string>
+        except?: Array<string>,
+        entry?: [string, string]
     ): string => {
-        let _v = ""
         except = except || []
+        entry = entry || ["", ""]
+
+        let _v = ""
+        let _signNum = -1
+        let condition: boolean = true
+
         while (
-            !!this.next() &&
-            (this.next()[1] === "*" ||
-                (AllowNextTokenList.includes(this.next()[0]) &&
-                    !except.includes(this.next()[1])))
+            condition &&
+            (this.next()?.[1] === "*" ||
+                (AllowNextTokenList.includes(this.next()?.[0]) &&
+                    !except.includes(this.next()?.[1])))
         ) {
-            _v += this.next()[1]
-            this._pos++
+            const next = this.next()
+            if (next[0] === "SpecialToken" && entry.includes(next[1])) {
+                if (next[1] === entry?.[0]) {
+                    _signNum++
+                    _v += next[1]
+                    this._pos++
+                }
+
+                if (next[1] === entry?.[1]) {
+                    _signNum--
+                    this._pos++
+
+                    if (_signNum === -2) {
+                        condition = false
+                        this._pos--
+                    } else {
+                        _v += next[1]
+                    }
+                }
+            } else {
+                _v += next[1]
+                this._pos++
+            }
         }
         return _v.trimEnd()
     }
@@ -105,13 +131,21 @@ export class LexicalAnalyzer {
                     switch (c[1]) {
                         case "[": {
                             _back.push(["OpenBracketLiteral", "["])
-                            if (this.next()?.[0] === "AlphabetToken") {
-                                const _v = this.TextLiteralGenerator([
-                                    "AlphabetToken",
-                                    "UnicodeToken",
-                                    "NumberToken",
-                                    "SpaceToken",
-                                ])
+                            if (
+                                this.next()?.[0] === "AlphabetToken" ||
+                                this.next()?.[1] === "["
+                            ) {
+                                const _v = this.TextLiteralGenerator(
+                                    [
+                                        "AlphabetToken",
+                                        "UnicodeToken",
+                                        "NumberToken",
+                                        "SpaceToken",
+                                        "SpecialToken",
+                                    ],
+                                    [],
+                                    ["[", "]"]
+                                )
                                 _back.push(["TextLiteral", _v])
                             } else {
                                 this._pos++
@@ -125,10 +159,12 @@ export class LexicalAnalyzer {
                             break
                         }
 
-                        // TODO refactor
                         case "{": {
                             _back.push(["OpenBraceLiteral", "{"])
-                            if (this.next()?.[0] === "AlphabetToken") {
+                            if (
+                                this.next()?.[0] === "AlphabetToken" ||
+                                this.next()?.[1] === "{"
+                            ) {
                                 const _v = this.TextLiteralGenerator(
                                     [
                                         "AlphabetToken",
@@ -137,6 +173,7 @@ export class LexicalAnalyzer {
                                         "SpaceToken",
                                         "SpecialToken",
                                     ],
+                                    [],
                                     ["{", "}"]
                                 )
                                 _back.push(["TextLiteral", _v])
