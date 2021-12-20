@@ -236,7 +236,7 @@ export class LexicalAnalyzer {
                 case "CommentToken": {
                     _back.push(["CommentLiteral", "%"])
 
-                    if (!!this.next() && this.next()[0] !== "NewlineToken") {
+                    if (this.next()?.[0] !== "NewlineToken") {
                         const _v = this.TextLiteralGenerator([
                             "AlphabetToken",
                             "BackslashToken",

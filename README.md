@@ -1,10 +1,12 @@
 # OLeX
 
+<img src="./docs/OLeX.svg" width="100" />
+
 The document is prowered by Vditor!
 
 ## Design
 
-OLeX is a pluggable TeX transformer, the architecture as followed:
+<img src="./docs/OLeX.png" width="80" /> is a pluggable TeX transformer, the architecture as followed:
 
 ```mindmap
 - OLeX
@@ -18,7 +20,7 @@ OLeX is a pluggable TeX transformer, the architecture as followed:
       - Tokenizer
       - Lexical Analyzer
       - Grammatical Analyzer
-      - Semantic Analyzer
+      - Semantic Analyzer (desperated)
       - Return Abstract Syntax Tree
   - Rendering
     - Renderer
